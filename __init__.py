@@ -2,6 +2,7 @@ import logging
 
 from aiohttp.web import Request
 from jinja2 import Template
+from markdown2 import markdown
 
 from opsdroid.matchers import match_webhook
 from opsdroid.events import Message
@@ -33,7 +34,13 @@ def format_alert_message(request, config):
                 _LOGGER.debug(f"Processing alert as resolved {alert}")
                 template = resolved_template
 
-            alert_messages.append(template.render(**alert))
+            markdown_body = template.render(**alert)
+            _LOGGER.debug(f"Markdown body: {markdown_body}")
+
+            html_body = markdown(markdown_body)
+            _LOGGER.debug(f"HTML body: {html_body}")
+
+            alert_messages.append(html_body)
     except Exception as e:
         _LOGGER.warning(f"Error in template formatting: {e}")
         alert_messages.append(f"{request.get('title', 'Alert')}\n{request.get('message', 'No message provided')}")
