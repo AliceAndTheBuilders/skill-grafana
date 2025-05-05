@@ -13,16 +13,24 @@ _LOGGER = logging.getLogger(__name__)
 def format_alert_message(request, config):
     """Format the alert message based on configuration and request data using Jinja2."""
     # Get the message template from config or use default
-    firing_template = Template(config.get("message_firing_template", "[FIRING] {{title}}\n{{message}}"))
-    resolved_template = Template(config.get("message_resolved_template", "[RESOLVED] {{title}}\n{{message}}"))
+    firing_template_str = config.get("message_firing_template", "[FIRING] {{title}}\n{{message}}")
+    resolved_template_str = config.get("message_resolved_template", "[RESOLVED] {{title}}\n{{message}}")
+
+    _LOGGER.debug(f"Firing_template_str: {firing_template_str}")
+    _LOGGER.debug(f"Resolved_template_str: {resolved_template_str}")
+
+    firing_template = Template(firing_template_str)
+    resolved_template = Template(resolved_template_str)
 
     alert_messages = []
 
     try:
         for alert in request["alerts"]:
             if alert["status"] == "firing":
+                _LOGGER.debug(f"Processing alert as firing {alert}")
                 template = firing_template
             else:
+                _LOGGER.debug(f"Processing alert as resolved {alert}")
                 template = resolved_template
 
             alert_messages.append(template.render(**alert))
@@ -38,7 +46,8 @@ async def process_alert_webhook(opsdroid, config, message):
     if type(message) is not Message and type(message) is Request:
         # Capture the request json data and set message to a default message
         request = await message.json()
-        _LOGGER.debug(request)
+        _LOGGER.debug(f"Request {request}")
+        _LOGGER.debug(f"Config {config}")
         connector = opsdroid.default_connector
         room = config.get("room", connector.default_room)
         message = Message("", None, room, connector)
@@ -46,7 +55,3 @@ async def process_alert_webhook(opsdroid, config, message):
         # Format and respond with the alert message
         formatted_message = format_alert_message(request, config)
         await message.respond(formatted_message)
-
-        # Include image if available
-        if "imageUrl" in request:
-            await message.respond(request["imageUrl"])
