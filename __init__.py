@@ -50,7 +50,7 @@ async def process_alert_webhook(opsdroid, config, message):
         _LOGGER.debug(f"Config {config}")
         connector = opsdroid.default_connector
         room = config.get("room", connector.default_room)
-        message = Message("", None, room, connector)
+        message = Message("", None, target=room, connector=connector)
 
         # Format and respond with the alert message
         formatted_message = format_alert_message(request, config)
